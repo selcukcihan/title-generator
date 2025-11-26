@@ -25,6 +25,11 @@ export async function login(request: Request, env: Env): Promise<Response> {
   githubAuthUrl.searchParams.set("client_id", clientId);
   githubAuthUrl.searchParams.set("redirect_uri", redirectUri);
   githubAuthUrl.searchParams.set("scope", "read:user");
+  // Force GitHub to show account picker instead of auto-redirecting
+  githubAuthUrl.searchParams.set("prompt", "select_account");
+  // Add state parameter for CSRF protection
+  const state = crypto.randomUUID();
+  githubAuthUrl.searchParams.set("state", state);
 
   // Redirect to GitHub OAuth endpoint
   return Response.redirect(githubAuthUrl.toString(), 302);
