@@ -34,7 +34,7 @@ export class GithubUser extends DurableObject<Env> {
 		const octokit = new Octokit({ auth: await this.ctx.storage.get("accessToken") as string });
 		const user = await this.getUser();
 		const timestamp = await this.ctx.storage.get("timestamp") as number;
-		if (timestamp > Date.now() - 1000 * 60 * 60 * 0) {
+		if (timestamp > Date.now() - 1000 * 60 * 60 * 1) {
 			return user;
 		}
 		const commits = await getLastCommitsOfUser(octokit, ((await this.ctx.storage.get("user")) as User).login);
@@ -58,10 +58,6 @@ export async function getUser(githubId: number, env: Env): Promise<Response> {
   const stub = env.GITHUB_USER.get(id);
 	const user = await stub.getUser();
 	return new Response(JSON.stringify(user), { status: 200 });
-}
-
-export async function getTitle(githubId: number, titleId: string, env: Env): Promise<Response> {
-	return new Response(titleId, { status: 200 });
 }
 
 export async function createTitle(githubId: number, env: Env): Promise<Response> {
