@@ -5,7 +5,10 @@
 	"compatibility_date": "2025-11-25",
 	"assets": {
 		"not_found_handling": "single-page-application",
-		"run_worker_first": ["/auth/*", "/api/*"]
+		"run_worker_first": [
+			"/auth/*",
+			"/api/*"
+		]
 	},
 	"migrations": [
 		{
@@ -25,5 +28,9 @@
 	},
 	"observability": {
 		"enabled": true
+	},
+	"vars": {
+		"GITHUB_CLIENT_ID": "Ov23liKdsTXqzuKszgo3",
+		"OAUTH_REDIRECT_URI": "https://title-generator.selcukcihan.workers.dev/auth/callback"
 	}
 }
