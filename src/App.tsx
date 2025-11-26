@@ -156,9 +156,12 @@ function App() {
                   data-testid={`link-share-${title.id}`}
                   onClick={(e) => {
                     e.preventDefault();
-                    alert(
-                      `Shared URL: ${window.location.origin}?title_id=${title.id}`
-                    );
+                    const tweetText = `Congratulate "${USER_DATA.login}" for their new title: ${title.text}\n#titlegenerator #github #cloudflare`;
+                    const homepageUrl = window.location.origin;
+                    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
+                      tweetText
+                    )}&url=${encodeURIComponent(homepageUrl)}`;
+                    window.open(twitterUrl, "_blank", "noopener,noreferrer");
                   }}
                 >
                   share_ptr &rarr;
