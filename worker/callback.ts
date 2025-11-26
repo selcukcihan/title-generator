@@ -55,6 +55,7 @@ export async function callback(request: Request, env: Env): Promise<Response> {
   if (!user?.data?.id) {
     return new Response("Failed to get user id", { status: 500 });
   }
+  console.log(user.data);
   const githubId = user.data.id
   const id = env.GITHUB_USER.idFromName(githubId.toString());
   const stub = env.GITHUB_USER.get(id);
@@ -62,6 +63,7 @@ export async function callback(request: Request, env: Env): Promise<Response> {
     githubId: user.data.id,
     name: user.data.name ?? undefined,
     email: user.data.email ?? undefined,
+    login: user.data.login,
     avatarUrl: user.data.avatar_url,
   }, accessToken);
 

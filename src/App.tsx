@@ -1,16 +1,8 @@
 import { useState, useEffect } from "react";
-import "./App.css";
-
-interface User {
-  githubId: number;
-  name?: string;
-  email?: string;
-  avatarUrl: string;
-  titles: string[];
-}
+import type { UserWithTitles } from "../types";
 
 function App() {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<UserWithTitles | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -30,7 +22,7 @@ function App() {
         return;
       }
       if (response.ok) {
-        const userData = (await response.json()) as User;
+        const userData = (await response.json()) as UserWithTitles;
         setUser(userData);
       }
     } catch (error) {
@@ -60,39 +52,76 @@ function App() {
   if (!user) {
     return null;
   }
-
+  const USER_DATA = user;
   return (
-    <div className="container">
-      <button onClick={handleLogout} className="logout-btn">
-        [logout]
-      </button>
-      <div className="header">
-        <h1>&gt; title-generator</h1>
-      </div>
+    <div className="layout">
+      <header className="header">
+        <button
+          className="logout-btn"
+          onClick={handleLogout}
+          data-testid="button-logout"
+        >
+          [ logout ]
+        </button>
+      </header>
 
-      <div className="user-card">
-        <div className="user-avatar">
-          <img src={user.avatarUrl} alt="Avatar" />
-        </div>
-        <div className="user-info">
-          {user.name && (
-            <div className="info-line">
-              <span className="label">name:</span>
-              <span className="value">{user.name}</span>
-            </div>
-          )}
-          {user.email && (
-            <div className="info-line">
-              <span className="label">email:</span>
-              <span className="value">{user.email}</span>
-            </div>
-          )}
-          <div className="info-line">
-            <span className="label">titles:</span>
-            <span className="value">[{user.titles.length}]</span>
+      <main className="profile-card">
+        <div className="profile-header">
+          <img
+            src={USER_DATA.avatarUrl}
+            alt={`${USER_DATA.login}'s avatar`}
+            className="avatar"
+            data-testid="img-avatar"
+          />
+          <div className="user-info">
+            {USER_DATA.name && (
+              <h1 data-testid="text-name">{USER_DATA.name}</h1>
+            )}
+
+            <p className="login-handle" data-testid="text-login">
+              @{USER_DATA.login}
+              {!USER_DATA.name && <span className="terminal-cursor"></span>}
+              {USER_DATA.name && <span className="terminal-cursor"></span>}
+            </p>
+
+            {USER_DATA.email && (
+              <p className="email" data-testid="text-email">
+                &lt;{USER_DATA.email}&gt;
+              </p>
+            )}
           </div>
         </div>
-      </div>
+
+        <section className="titles-section">
+          <h2>// Titles_</h2>
+          <ul className="titles-list">
+            {USER_DATA.titles.map((title) => (
+              <li
+                key={title.id}
+                className="title-item"
+                data-testid={`row-title-${title.id}`}
+              >
+                <span className="title-text">"{title.text}"</span>
+                <a
+                  href={`?title_id=${title.id}`}
+                  className="share-link"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid={`link-share-${title.id}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    alert(
+                      `Shared URL: ${window.location.origin}?title_id=${title.id}`
+                    );
+                  }}
+                >
+                  share_ptr &rarr;
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      </main>
     </div>
   );
 }

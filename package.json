@@ -12,6 +12,7 @@
     "cf-typegen": "wrangler types"
   },
   "dependencies": {
+    "@google/genai": "^1.30.0",
     "jose": "^6.1.2",
     "octokit": "^5.0.5",
     "react": "^19.1.1",

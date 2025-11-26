@@ -1,42 +1,21 @@
 import { DurableObject } from "cloudflare:workers";
 import { Octokit } from "octokit";
+import type { User, Title, UserWithTitles } from "../types";
+import { generateTitle } from "./genai";
 
-export interface User {
-	githubId: number;
-	name?: string;
-	email?: string;
-	avatarUrl: string;
-}
+async function getLastCommitsOfUser(octokit: Octokit, username: string) {
+	const res = await octokit.request("GET /search/commits", {
+		q: `author:${username}`,
+		sort: "author-date",
+		order: "desc",
+		per_page: 100,
+		page: 1,
+		headers: {
+			accept: "application/vnd.github.cloak-preview+json"
+		}
+	});
 
-async function fetchUserCommits(octokit: Octokit, username: string) {
-  let page = 1;
-  const results = [];
-
-  while (true) {
-    const res = await octokit.request("GET /search/commits", {
-      q: `author:${username}`,
-      sort: "author-date",
-      order: "desc",
-      per_page: 100,
-      page,
-      headers: {
-        accept: "application/vnd.github.cloak-preview+json"
-      }
-    });
-
-    results.push(...res.data.items);
-
-    if (res.data.items.length < 100) break;
-    page++;
-    break;
-  }
-
-  return results.map(item => ({
-    repo: item.repository.full_name,
-    message: item.commit.message,
-    date: item.commit.author.date,
-    url: item.html_url
-  }));
+  return res.data.items.map(item => item.commit.message);
 }
 
 /** A Durable Object's behavior is defined in an exported Javascript class */
@@ -55,13 +34,35 @@ export class GithubUser extends DurableObject<Env> {
 	async initialize(user: User, accessToken: string): Promise<void> {
 		this.ctx.storage.put("user", user);
 		this.ctx.storage.put("accessToken", accessToken);
+		this.ctx.storage.put("timestamp", 0);
 	}
 
-	async getUser(): Promise<User & { titles: string[]}> {
+	async getUser(): Promise<UserWithTitles> {
 		return {
 			...(await this.ctx.storage.get("user")) as User,
-			titles: (await this.ctx.storage.get("titles")) as string[] ?? [],
+			titles: (await this.ctx.storage.get("titles")) as Title[] ?? [],
 		}
+	}
+
+	async newTitle(): Promise<UserWithTitles> {
+		const octokit = new Octokit({ auth: await this.ctx.storage.get("accessToken") as string });
+		const user = await this.getUser();
+		const timestamp = await this.ctx.storage.get("timestamp") as number;
+		if (timestamp > Date.now() - 1000 * 60 * 60 * 1) {
+			return user;
+		}
+		const commits = await getLastCommitsOfUser(octokit, ((await this.ctx.storage.get("user")) as User).login);
+		const title = {
+			text: await generateTitle(commits, this.env),
+			id: crypto.randomUUID(),
+		};
+		const titles = [...user.titles, title];
+		this.ctx.storage.put("titles", titles);
+		this.ctx.storage.put("timestamp", Date.now());
+		return {
+			...user,
+			titles,
+		};
 	}
 }
 
@@ -78,5 +79,8 @@ export async function getTitle(githubId: number, titleId: string, env: Env): Pro
 }
 
 export async function createTitle(githubId: number, env: Env): Promise<Response> {
-	return new Response("ok", { status: 200 });
+	const id = env.GITHUB_USER.idFromName(githubId.toString());
+  const stub = env.GITHUB_USER.get(id);
+  const user = await stub.newTitle();
+	return new Response(JSON.stringify(user), { status: 200 });
 }
