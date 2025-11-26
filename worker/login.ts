@@ -19,7 +19,6 @@ export async function login(request: Request, env: Env): Promise<Response> {
   if (!clientId || !redirectUri) {
     return new Response("Missing required environment variables", { status: 500 });
   }
-  console.log(clientId, redirectUri);
 
   // Build GitHub OAuth URL
   const githubAuthUrl = new URL("https://github.com/login/oauth/authorize");

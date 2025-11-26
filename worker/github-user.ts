@@ -2,21 +2,7 @@ import { DurableObject } from "cloudflare:workers";
 import { Octokit } from "octokit";
 import type { User, Title, UserWithTitles } from "../types";
 import { generateTitle } from "./genai";
-
-async function getLastCommitsOfUser(octokit: Octokit, username: string) {
-	const res = await octokit.request("GET /search/commits", {
-		q: `author:${username}`,
-		sort: "author-date",
-		order: "desc",
-		per_page: 100,
-		page: 1,
-		headers: {
-			accept: "application/vnd.github.cloak-preview+json"
-		}
-	});
-
-  return res.data.items.map(item => item.commit.message);
-}
+import { getLastCommitsOfUser } from "./github";
 
 /** A Durable Object's behavior is defined in an exported Javascript class */
 export class GithubUser extends DurableObject<Env> {
@@ -48,7 +34,7 @@ export class GithubUser extends DurableObject<Env> {
 		const octokit = new Octokit({ auth: await this.ctx.storage.get("accessToken") as string });
 		const user = await this.getUser();
 		const timestamp = await this.ctx.storage.get("timestamp") as number;
-		if (timestamp > Date.now() - 1000 * 60 * 60 * 1) {
+		if (timestamp > Date.now() - 1000 * 60 * 60 * 0) {
 			return user;
 		}
 		const commits = await getLastCommitsOfUser(octokit, ((await this.ctx.storage.get("user")) as User).login);
@@ -56,7 +42,7 @@ export class GithubUser extends DurableObject<Env> {
 			text: await generateTitle(commits, this.env),
 			id: crypto.randomUUID(),
 		};
-		const titles = [...user.titles, title];
+		const titles = [title, ...user.titles];
 		this.ctx.storage.put("titles", titles);
 		this.ctx.storage.put("timestamp", Date.now());
 		return {

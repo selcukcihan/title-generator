@@ -4,6 +4,7 @@ import type { UserWithTitles } from "../types";
 function App() {
   const [user, setUser] = useState<UserWithTitles | null>(null);
   const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -39,6 +40,26 @@ function App() {
   const handleLogout = async () => {
     await fetch("/auth/logout");
     window.location.reload();
+  };
+
+  const handleGenerateTitle = async () => {
+    setGenerating(true);
+    try {
+      const response = await fetch("/api/user", {
+        method: "POST",
+        credentials: "include",
+      });
+      if (response.ok) {
+        const userData = (await response.json()) as UserWithTitles;
+        setUser(userData);
+      } else {
+        console.error("Failed to generate title:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error generating title:", error);
+    } finally {
+      setGenerating(false);
+    }
   };
 
   if (loading) {
@@ -93,7 +114,17 @@ function App() {
         </div>
 
         <section className="titles-section">
-          <h2>// Titles_</h2>
+          <div className="titles-section-header">
+            <h2>// Titles_</h2>
+            <button
+              onClick={handleGenerateTitle}
+              disabled={generating}
+              className="generate-title-btn"
+              data-testid="button-generate-title"
+            >
+              {generating ? "Generating..." : "Generate my title"}
+            </button>
+          </div>
           <ul className="titles-list">
             {USER_DATA.titles.map((title) => (
               <li
